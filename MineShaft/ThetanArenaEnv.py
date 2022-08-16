@@ -264,79 +264,6 @@ class ThetanArenaEnv(BaseEnv):
         pyautogui.moveTo(loc[0], loc[1], duration=0.2)
         pyautogui.click(button="left", duration=0.2)
 
-        """
-        Determine if the Tutorial has started
-        """
-
-        """
-        opencv read the image by file path for matching
-        """
-        tofind = cv2.imread(
-            "../SourcePictures/entertutor2.png", cv2.IMREAD_UNCHANGED)
-        """
-        wait for 5 seconds as the game maybe loading
-        """
-        time.sleep(5)
-        """
-        time.time() return the current time
-        start_time store the current time
-        """
-        start_time = time.time()
-        """
-        set a boolean to determind if the tutorial game is started
-        """
-        tutor_started = False
-        """
-        use a while loop to keep matching the screen capture and the required image
-        the loop will go on at most 20 seconds
-        if there is no match with thershold larger than 0.7 after 20seconds,
-        it is determinded that the tutorial is not started
-        """
-        while time.time() - start_time < 20 and not tutor_started:
-            loc, thershold = cv_matching.matching_with_screencap(tofind)
-            if thershold > 0.7:
-                tutor_started = True
-
-        """
-        Determine if the Tutorial has finished
-
-        only run if the tutorial is started
-        """
-        if tutor_started:
-            """
-            since the game last for 3 minites, the matching will start after that
-            """
-            time.sleep(180)
-            """
-            opencv read the image by file path for matching
-            """
-
-            tofind = cv2.imread(
-                "../SourcePictures/finishtutor.png",
-                cv2.IMREAD_UNCHANGED)
-
-            """
-            similarly, set a boolean to determind if the game is finished and
-            record the time
-            """
-
-            start_time = time.time()
-            tutor_ended = False
-
-        """
-
-        use a while loop to keep matching the screen capture and the required image
-        the loop will go on at most 60 seconds
-        if there is no match with thershold larger than 0.7 after 60seconds,
-        it is determinded that the tutorial is not finished
-
-        """
-
-        while time.time() - start_time < 60 and not tutor_ended:
-            loc, thershold = matching_with_screencap(tofind)
-            if thershold > 0.7:
-                tutor_ended = True
-
     def _end_game(self):
         """
         This is the code for end game
@@ -344,13 +271,32 @@ class ThetanArenaEnv(BaseEnv):
         self.p.terminate()
         
     def _check_if_game_session_started(self):
-        # self.info = {'waiting': False}
-        pass
-    
+        """Determine if the Game session has started
+        
+        Powered by OpenCV template matching of tutorial session start screen
+        """
+        # opencv read the image by file path for templatematching
+        tofind = cv2.imread(
+            "../SourcePictures/entertutor2.png", cv2.IMREAD_UNCHANGED)
+        loc, thershold = cv_matching.matching_with_screencap(tofind)
+        if thershold > 0.7:
+            self.info['waiting'] = False
+
     def _check_if_game_session_ended(self):
-        # self.done = True
         # self.rewards = self._screen_get_total_score()
-        pass
+        """Determine if the Tutorial has finished
+
+        Powered by OpenCV template matching
+        """
+        if not self.info['waiting']:
+            # opencv read the image by file path for template matching
+            tofind = cv2.imread(
+                "../SourcePictures/finishtutor.png",
+                cv2.IMREAD_UNCHANGED)
+
+            loc, thershold = matching_with_screencap(tofind)
+            if thershold > 0.7:
+                self.done = True
 
     def _reset_game(self):
         pass
