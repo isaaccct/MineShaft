@@ -13,15 +13,44 @@ from cv_matching import cv_matching
 
 class ThetanArenaEnv(BaseEnv):
     def __init__(self, io_mode=BaseEnv.IO_MODE.FULL_CONTROL,
-                 explore_space=BaseEnv.EXPLORE_MODE.FULL):
-        """This is the code of start game
-
-        Use try and catch statement to catch exception
-        when the game is not installed in the provided path,
-        then raise the exception for the upper level to handle.
-
-        The hardcode path to open the game:
-        "C:\Program Files (x86)\Thetan Arena\Thetan Arena.exe"
+                 explore_space=BaseEnv.EXPLORE_MODE.MATCH):
+        """Initialize environment, defines the input (action_space)
+        and output (observation_space).
+        
+        Screen capture module shall be initialized here and gaming program
+        shall be started. `observation_space` and `action_space` will be
+        defined here, and `explore_space` will be defined here too.
+        
+        Parameters
+        ----------
+        io_mode : Enum, optional
+            Default input/output of the environment interacting with reinforcement
+            learning agent is `IO_MODE.FULL_CONTROL` which directly provide screen
+            capture as `observation_space` for reinforcement learning agent to
+            observe the state of environment and requires matrix of keys mapping to
+            a 101 keys ANSI standard keyboard as keyboard input (allowing combined
+            keys) plus a vector descripting `(X, Y)` mouse moving distance or mouse
+            click event.
+        explore_space : Enum, optional
+            Explore space is the domain and scope of the tasks we want the
+            reinforcement learning agent to learn and perform. Default explore space
+            for the reinforcement learning agent is full control of the game from
+            settings to character selection and weapon selection and joining the match.
+            It is assumed that the reinforcement learning agent know what its going to
+            do and do pick the right tools for its plan. Or we can set `explore_space`
+            to `EXPLORE_MODE.MATCH` and write a script to settle everything else let
+            the reinforcement learning agent focus on match in the game. 
+            
+        Returns
+        -------
+        action_space : gym.space
+            A numpy.array compatible placeholder indicates the shape of input to `step()`
+            for action instruction from the reinforcement learning agent (also as the
+            output shape of the reinforcement learning agent).
+        observation_space : gym.space
+            A numpy.array compatible placeholder indicates the shape of output from `step()`
+            for screen capture or data captured from game's Application Programming Interface
+            (also as the input shape of the reinforcement learning agent).
         """
         super(ThetanArenaEnv, self).__init__()
 
@@ -31,6 +60,12 @@ class ThetanArenaEnv(BaseEnv):
             raise Exception("the game is not installed")
         
         if io_mode == IO_MODE.FULL_CONTROL:
+            # press & release channels; 80 key + mouse (move + click + scroll)
+            ACTION_SHAPE = (2, 80 + (2 + 2 + 1))
+            self.action_space = spaces.Box(low=-1.0, high=1.0,
+                                           shape=ACTION_SHAPE,
+                                           dtype=np.float32)
+
             # obs_shape in (HEIGHT, WIDTH, N_CHANNELS)
             obs_shape = (512, 512, 4)
             self.observation_space = spaces.Box(low=0, high=255,
@@ -50,10 +85,25 @@ class ThetanArenaEnv(BaseEnv):
                           img.shape[0] // ratio)
             self.left_right_pad = (obs_shape[1] - self.dsize[1]) // 2
             self.top_bottom_pad = (obs_shape[0] - self.dsize[0]) // 2
+
+            self.KEYBOARD_MAP = np.asarray([
+                'altleft', 'altright', 'ctrlleft', 'ctrlright', 'shiftleft',
+                'shiftright', 'backspace', 'capslock', 'delete', 'down',
+                "'", ',', '-', '.', '/', '0', '1', '2', '3', '4', '5',
+                '6', '7', '8', '9', ';', '=', '[', '\\', ']', '`', 'a',
+                'b', 'c', 'd', 'e','f', 'g', 'h', 'i', 'j', 'k', 'l',
+                'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+                'x', 'y', 'z', 'insert', 'left', 'num0', 'num1', 'num2',
+                'num3', 'num4', 'num5', 'num6', 'num7', 'num8', 'num9',
+                'end', 'enter', 'esc', 'numlock', 'pagedown', 'pageup',
+                'right', 'space', 'tab', 'up', 'home'])
             
         self.info = {'waiting': True}
         self.done = False
-        self.rewards = 0
+        self.reward = 0
+
+        self.cv_matcher = cv_matching()
+        self.cv_matcher.preload_templates()
 
         return self.action_space, self.observation_space
 
@@ -62,7 +112,7 @@ class ThetanArenaEnv(BaseEnv):
         obs = self._screen_cap()
         self._check_if_game_session_started()
         self._check_if_game_session_ended()
-        return obs, self.rewards, self.done, self.info
+        return obs, self.reward, self.done, self.info
 
     def reset(self):
         self._reset_game()
@@ -106,17 +156,37 @@ class ThetanArenaEnv(BaseEnv):
                                   cv2.BORDER_CONSTANT,
                                   value=[0, 0, 0])
 
+    def _capture_reward(self):
+        if not self.info['waiting'] and not self.done:
+            pass
+        # self.reward = self._screen_get_total_score()
+
     def _keyboard_input(self, action):
-        # scan and find keyboard action
-        # key press # self._keyboard_press(ascii_list)
-        # key release # self._keyboard_release(ascii_list)
-        pass
+        """Press and release keys based on `action` as KEYMAP mask
+
+        It is allowed to mask a key to be pressed and not being
+        released in the dim1 of `action` array for longer key press.
+
+        Parameters
+        ----------
+        action : numpy.array
+            Keymap mask of set of keys to be pressed in dim0
+            and set of keys to be released in dim1
+        """
+        ascii_list = self.KEYBOARD_MAP[action[0] > 0]
+        # key press
+        self._keyboard_press(ascii_list)
+        ascii_list = self.KEYBOARD_MAP[action[1] > 0]
+        # key release
+        self._keyboard_release(ascii_list)
 
     def _keyboard_press(self, ascii_list):
-        pass
+        for key in ascii_list:
+            pyautogui.keyDown(key)
 
     def _keyboard_release(self, ascii_list):
-        pass
+        for key in ascii_list:
+            pyautogui.keyUp(key)
     
     def _mouse_move(self, width, height):
         """Move mouse to the location of the percentage of game window
@@ -192,75 +262,47 @@ class ThetanArenaEnv(BaseEnv):
             pyautogui.mouseUp(button='right')
 
     def _start_game(self):
-        """This is the code for starting game
+        """This is the code of start game
 
-        The file path "C:\\Program Files (x86)\\Thetan Arena\\Thetan Arena.exe"
-        and
-        program name "C:\\Program Files (x86)\\Thetan Arena\\Thetan Arena.exe"
-        is hardcode.
+        Use try and catch statement to catch exception
+        when the game is not installed in the provided path,
+        then raise the exception for the upper level to handle.
+
+        The hardcode path to open the game:
+        "C:\Program Files (x86)\Thetan Arena\Thetan Arena.exe"
         """
-
         progname = "C:\\Users\\Public\\Desktop\\Thetan Arena"
         filepath = "C:\\Program Files (x86)\\Thetan Arena\\Thetan Arena.exe"
 
         self.p = subprocess.Popen([filepath, progname])
 
     def enter_match(self):
-        """
-        change the current directory to the script folder so that relative
-        path can be used
-        """
-        folder_path = os.path.dirname(os.path.abspath(__file__))
-        os.chdir(folder_path)
-
-        """
-        opencv read the find match image by file path
-        """
-
-        tofind = cv2.imread(
-            "../SourcePictures/findmatch2.png", cv2.IMREAD_UNCHANGED)
-
-        """
-        using the above method
-        """
-        loc, thershold = cv_matching.matching_with_screencap(tofind)
-
-        """
-        using pyautogui to click the obtained coordinates
-        """
+        # using pyautogui to click the obtained coordinates
+        loc, _ = self.cv_matcher.find_location(
+            self.cv_matcher.findmatch2_png)
         pyautogui.moveTo(loc[0] - 100, loc[1], duration=0.2)
         pyautogui.click(button="left", duration=0.2)
 
-        """
-        similarly, using pyautogui to click the obtained coordinates
-        """
-
-        tofind = cv2.imread(
-            "../SourcePictures/deathmatch2.png", cv2.IMREAD_UNCHANGED)
-        loc2, thershold = cv_matching.matching_with_screencap(tofind)
+        loc2, thershold = self.cv_matcher.find_location(
+            self.cv_matcher.deathmatch2_png)
         if thershold > 0.7:
             pyautogui.moveTo(loc2[0] + 250, loc2[1], duration=0.2)
             pyautogui.click(button="left", duration=0.2)
-
         else:
-            pyautogui.dragTo(loc[0] - 400, loc[1], duration=0.2, button="left")
-            tofind = cv2.imread(
-                "../SourcePictures/deathmatch2.png",
-                cv2.IMREAD_UNCHANGED)
+            pyautogui.dragTo(loc[0] - 400, loc[1],
+                duration=0.2, button="left")
             time.sleep(2)
-            loc2, thershold = cv_matching.matching_with_screencap(tofind)
+            loc2, thershold = self.cv_matcher.find_location(
+                self.cv_matcher.deathmatch2_png)
         if thershold < 0.6:
             print("no deathmatch game mode")
             exit()
         pyautogui.moveTo(loc2[0] + 250, loc2[1], duration=0.2)
         pyautogui.click(button="left", duration=0.2)
 
-        """
-        again, using the above method to find and click the tutorial image
-        """
-
-        tofind = cv2.imread("../SourcePictures/tutor.png", cv2.IMREAD_UNCHANGED)
-        loc, thershold = matching_with_screencap(tofind)
+        # find and click the tutorial image
+        loc, _ = self.cv_matcher.find_location(
+            self.cv_matcher.tutor_png)
         pyautogui.moveTo(loc[0], loc[1], duration=0.2)
         pyautogui.click(button="left", duration=0.2)
 
@@ -275,26 +317,19 @@ class ThetanArenaEnv(BaseEnv):
         
         Powered by OpenCV template matching of tutorial session start screen
         """
-        # opencv read the image by file path for templatematching
-        tofind = cv2.imread(
-            "../SourcePictures/entertutor2.png", cv2.IMREAD_UNCHANGED)
-        loc, thershold = cv_matching.matching_with_screencap(tofind)
-        if thershold > 0.7:
+        _, thres = self.cv_matcher.find_location(
+            self.cv_matcher.entertutor2_png)
+        if thres > 0.7:
             self.info['waiting'] = False
 
     def _check_if_game_session_ended(self):
-        # self.rewards = self._screen_get_total_score()
         """Determine if the Tutorial has finished
 
         Powered by OpenCV template matching
         """
         if not self.info['waiting']:
-            # opencv read the image by file path for template matching
-            tofind = cv2.imread(
-                "../SourcePictures/finishtutor.png",
-                cv2.IMREAD_UNCHANGED)
-
-            loc, thershold = matching_with_screencap(tofind)
+            _, thershold = self.cv_matcher.find_location(
+                self.cv_matcher.finishtutor_png)
             if thershold > 0.7:
                 self.done = True
 
