@@ -4,7 +4,16 @@ import numpy as np
 
 
 class cv_matching:
-    def preload_template(tofind):
+    def preload_templates(self):
+        """Preload all images on start to optimize runtime
+
+        Images loaded:
+        - "../SourcePictures/findmatch2.png"
+        - "../SourcePictures/deathmatch2.png"
+        - "../SourcePictures/tutor.png"
+        - "../SourcePictures/entertutor2.png"
+        - "../SourcePictures/finishtutor.png"
+        """
         # ensure relative path
         folder_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(folder_path)
