@@ -1,6 +1,8 @@
-"""This is the base class of the MineShaft environment. It inherited OpenAI Gym Environment.
+"""This is the base class of the MineShaft environment.
+It inherited OpenAI Gym Environment.
 
-For any game supported by MineShaft, the environment inherited this class as an interface.
+For any game supported by MineShaft,
+the environment inherited this class as an interface.
 """
 from enum import Enum
 
@@ -10,16 +12,18 @@ from gym import spaces
 class BaseEnv(gym.Env):
     """Custom Environment that follows gym interface
     
-    By default, the environment let reinforcement learning agent play the game in the
-    way of human (screen, keyboard and mouse) and giving it the full control of the
-    game from setting to character selection and weapon selection and joining the match.
+    By default, the environment let reinforcement learning agent play
+    the game in the way of human (screen, keyboard and mouse) and giving
+    it the full control of the game from setting to character selection
+    and weapon selection and joining the match.
     
-    It is assumed that the reinforcement learning agent know what its going to do and do
-    pick the right tools for its plan.
+    It is assumed that the reinforcement learning agent know what its
+    going to do and do pick the right tools for its plan.
     
-    > :warning: The major difference between MineShaft environment and OpenAI Gym is that
-    >           even the `step()` may not be called, the game in this environment will
-    >           continue. i.e. The time interval between each `step()` may not be the same.
+    > :warning: The major difference between MineShaft environment and
+    >           OpenAI Gym is that even the `step()` may not be called,
+    >           the game in this environment will continue. i.e. The
+    >           time interval between each `step()` may not be the same.
     >           The game does not pause like what OpenAI Gym do.
     
     Attributes
@@ -29,8 +33,10 @@ class BaseEnv(gym.Env):
         IO_MODE.SIMPLIFIED = simpilified observation_space and action_space
         IO_MODE.FULL_CONTROL = screen and full keyboard and mouse control
     EXPLORE_MODE : Enum
-        EXPLORE_MODE.MATCH = reinforcement learning agent only take control during match
-        EXPLORE_MODE.FULL = reinforcement learning agent have full control since login
+        EXPLORE_MODE.MATCH = reinforcement learning agent
+                             only take control during match
+        EXPLORE_MODE.FULL = reinforcement learning agent
+                             have full control since login
     """
     metadata = {'render.modes': ['human']}
     IO_MODE = Enum('IO_MODE', ('API', 'SIMPLIFIED', 'FULL_CONTROL'))
@@ -80,8 +86,8 @@ class BaseEnv(gym.Env):
         # Define action and observation space
         # They must be gym.spaces objects
         if io_mode == IO_MODE.FULL_CONTROL:
-            # press & release channels; 104 keyboard + mouse (move + click + scroll)
-            ACTION_SHAPE = (2, 104 + (2 + 2 + 1))
+            # press & release channels; 92 key + mouse (move + click + scroll)
+            ACTION_SHAPE = (2, 92 + (2 + 2 + 1))
             # screen height
             HEIGHT = 512
             # screen width

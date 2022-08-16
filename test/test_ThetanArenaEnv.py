@@ -71,39 +71,36 @@ class ThetanArenaEnvTestCase(unittest.TestCase):
 		Notes
 		-------
 			The keyboard input action is a 1D matrix of float value with
-			length `133`. Each value in the matrix represent the force
+			length `80`. Each value in the matrix represent the force
 			pressed on the following keys on the keyboard (in the same
 			sequence).
 			```
 			[
+				'altleft', 'altright', 'ctrlleft', 'ctrlright', 'shiftleft',
+				'shiftright', 'backspace', 'capslock', 'delete', 'down',
 				"'", ',', '-', '.', '/', '0', '1', '2', '3', '4', '5',
 				'6', '7', '8', '9', ';', '=', '[', '\\', ']', '`', 'a',
 				'b', 'c', 'd', 'e','f', 'g', 'h', 'i', 'j', 'k', 'l',
 				'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
-				'x', 'y', 'z', 'altleft', 'altright', 'backspace',
-				'capslock', 'ctrlleft', 'ctrlright', 'delete', 'down',
-				'end', 'enter', 'esc', 'f1', 'f10', 'f11', 'f12', 'f13',
-				'f14', 'f15', 'f16', 'f17', 'f18', 'f19', 'f2', 'f20',
-				'f21', 'f22', 'f23', 'f24', 'f3', 'f4', 'f5', 'f6', 'f7',
-				'f8', 'f9', 'insert', 'left', 'num0', 'num1', 'num2',
+				'x', 'y', 'z', 'insert', 'left', 'num0', 'num1', 'num2',
 				'num3', 'num4', 'num5', 'num6', 'num7', 'num8', 'num9',
-				'numlock', 'pagedown', 'pageup', 'right', 'shiftleft',
-				'shiftright', 'space', 'tab', 'up', 'home'
+				'end', 'enter', 'esc', 'numlock', 'pagedown', 'pageup',
+				'right', 'space', 'tab', 'up', 'home'
 			]
 			```
 			The value of force will be in range `-1` to `1` and it is considered
 			to be pressed down only if the value is larger than `0`.
 		"""
-		action_a = np.zeros((104));
-		action_a[21] = 1;
+		action_a = np.zeros((80));
+		action_a[31] = 1;
 		# press "a"
 		self.env._keyboard_press(action_a);
 		assert keyboard.is_pressed("a");
 		self.env._keyboard_release(action_a);
 		assert not keyboard.is_pressed("a");
-		action_ctrl_a = np.zeros((104));
-		action_ctrl_a[21] = 1;
-		action_ctrl_a[51] = 1;
+		action_ctrl_a = np.zeros((80));
+		action_ctrl_a[31] = 1;
+		action_ctrl_a[2] = 1;
 		# press Ctrl+a
 		self.env._keyboard_press(action_ctrl_a);
 		assert keyboard.is_pressed('ctrl+a');
