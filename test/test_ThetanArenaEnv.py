@@ -1,3 +1,4 @@
+import win32api
 import time
 import unittest
 
@@ -33,33 +34,69 @@ class ThetanArenaEnvTestCase(unittest.TestCase):
 	def test__mouse_click(self):
 		"""Test case for mouse clikc method
 
-		There is no way to determine if the click, press, release works well.
-		Assume if no error occur is good then pass the test.
+		Use `win32api` to determine if the press & release works.
 		"""
 		self.env._mouse_click(np.asarray([0, 0.4]));
 		self.env._mouse_click(np.asarray([0.5, -0.4]));
 		self.env._mouse_click(np.asarray([0.6, 0.6]));
 		self.env._mouse_click(np.asarray([0, -0.4]));
+
+		state_left = win32api.GetKeyState(0x01);
 		self.env._mouse_press(True, False);
+		state_a = win32api.GetKeyState(0x01);
+		self.assertTrue(state_left != state_a);
+		self.assertTrue(state_a < 0);
 		self.env._mouse_release(True, False);
+		state_a = win32api.GetKeyState(0x01);
+		self.assertTrue(state_left != state_a);
+		self.assertTrue(state_a >= 0);
+
+		state_right = win32api.GetKeyState(0x02);
 		self.env._mouse_press(False, True);
+		state_a = win32api.GetKeyState(0x02);
+		self.assertTrue(state_right != state_a);
+		self.assertTrue(state_a < 0);
 		self.env._mouse_release(False, True);
+		state_a = win32api.GetKeyState(0x02);
+		self.assertTrue(state_right != state_a);
+		self.assertTrue(state_a >= 0);
 
 	def test__mouse_drag(self):
 		"""Test case for mouse drag (combination of mouse action)
 
-		There is no way to determine if the combination works well.
-		Assume if no error occur is good then pass the test.
+		Use `pyautogui.position` to determine if the move works.
+		Use `win32api` to determine if the press & release works.
 		"""
 		self.env._mouse_move((0, 0));
+		result = np.asarray(pyautogui.position());
+		self.assertTrue(np.abs(np.zeros(2) - result) < 2);
+		state_left = win32api.GetKeyState(0x01);
 		self.env._mouse_press(True, False);
+		state_a = win32api.GetKeyState(0x01);
+		self.assertTrue(state_left != state_a);
+		self.assertTrue(state_a < 0);
 		expected = np.asarray(pyautogui.size()) * np.asarray(self.mouse_x_y);
 		self.env._mouse_move(self.mouse_x_y);
+		result = np.asarray(pyautogui.position());
+		self.assertTrue(np.abs(expected - result) < 2);
 		self.env._mouse_release(True, False);
+		state_a = win32api.GetKeyState(0x01);
+		self.assertTrue(state_left != state_a);
+		self.assertTrue(state_a >= 0);
+
+		state_right = win32api.GetKeyState(0x02);
 		self.env._mouse_press(False, True);
+		state_a = win32api.GetKeyState(0x02);
+		self.assertTrue(state_right != state_a);
+		self.assertTrue(state_a < 0);
 		expected = np.asarray(pyautogui.size()) * np.asarray(self.mouse_x_y);
 		self.env._mouse_move(self.mouse_x_y);
+		result = np.asarray(pyautogui.position());
+		self.assertTrue(np.abs(expected - result) < 2);
 		self.env._mouse_release(False, True);
+		state_a = win32api.GetKeyState(0x02);
+		self.assertTrue(state_right != state_a);
+		self.assertTrue(state_a > 0);
 		
 	def test__keyboard_input(self):
 		"""Test case for keyboard input
