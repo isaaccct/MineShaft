@@ -4,10 +4,35 @@ import numpy as np
 
 
 class cv_matching:
+    def __init__(self):
+        pass
 
+    def preload_templates(self):
+        """
+        change the current directory to the script folder so that relative
+        path can be used
+        """
+        folder_path = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(folder_path)
 
-    @staticmethod
-    def matching_with_screencap(tofind):
+        # opencv read the find match image by file path
+        self.findmatch2_png = cv2.imread(
+            "../SourcePictures/findmatch2.png",
+            cv2.IMREAD_UNCHANGED)
+        self.deathmatch2_png = cv2.imread(
+            "../SourcePictures/deathmatch2.png",
+            cv2.IMREAD_UNCHANGED)
+        self.tutor_png = cv2.imread(
+            "../SourcePictures/tutor.png",
+            cv2.IMREAD_UNCHANGED)
+        self.entertutor2_png = cv2.imread(
+            "../SourcePictures/entertutor2.png",
+            cv2.IMREAD_UNCHANGED)
+        self.finishtutor_png = cv2.imread(
+            "../SourcePictures/finishtutor.png",
+            cv2.IMREAD_UNCHANGED)
+
+    def find_location(self, tofind):
         """
         the method requires an image parameter which is in numpy.ndarray format
         then it compares the image with screen capture

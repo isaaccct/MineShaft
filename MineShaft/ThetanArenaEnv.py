@@ -55,6 +55,9 @@ class ThetanArenaEnv(BaseEnv):
         self.done = False
         self.rewards = 0
 
+        self.cv_matcher = cv_matching()
+        self.cv_matcher.preload_templates()
+
         return self.action_space, self.observation_space
 
     def step(self, action):
@@ -206,61 +209,32 @@ class ThetanArenaEnv(BaseEnv):
         self.p = subprocess.Popen([filepath, progname])
 
     def enter_match(self):
-        """
-        change the current directory to the script folder so that relative
-        path can be used
-        """
-        folder_path = os.path.dirname(os.path.abspath(__file__))
-        os.chdir(folder_path)
-
-        """
-        opencv read the find match image by file path
-        """
-
-        tofind = cv2.imread(
-            "../SourcePictures/findmatch2.png", cv2.IMREAD_UNCHANGED)
-
-        """
-        using the above method
-        """
-        loc, thershold = cv_matching.matching_with_screencap(tofind)
-
-        """
-        using pyautogui to click the obtained coordinates
-        """
+        # using pyautogui to click the obtained coordinates
+        loc, _ = self.cv_matcher.find_location(
+            self.cv_matcher.findmatch2_png)
         pyautogui.moveTo(loc[0] - 100, loc[1], duration=0.2)
         pyautogui.click(button="left", duration=0.2)
 
-        """
-        similarly, using pyautogui to click the obtained coordinates
-        """
-
-        tofind = cv2.imread(
-            "../SourcePictures/deathmatch2.png", cv2.IMREAD_UNCHANGED)
-        loc2, thershold = cv_matching.matching_with_screencap(tofind)
+        loc2, thershold = self.cv_matcher.find_location(
+            self.cv_matcher.deathmatch2_png)
         if thershold > 0.7:
             pyautogui.moveTo(loc2[0] + 250, loc2[1], duration=0.2)
             pyautogui.click(button="left", duration=0.2)
-
         else:
-            pyautogui.dragTo(loc[0] - 400, loc[1], duration=0.2, button="left")
-            tofind = cv2.imread(
-                "../SourcePictures/deathmatch2.png",
-                cv2.IMREAD_UNCHANGED)
+            pyautogui.dragTo(loc[0] - 400, loc[1],
+                duration=0.2, button="left")
             time.sleep(2)
-            loc2, thershold = cv_matching.matching_with_screencap(tofind)
+            loc2, thershold = self.cv_matcher.find_location(
+                self.cv_matcher.deathmatch2_png)
         if thershold < 0.6:
             print("no deathmatch game mode")
             exit()
         pyautogui.moveTo(loc2[0] + 250, loc2[1], duration=0.2)
         pyautogui.click(button="left", duration=0.2)
 
-        """
-        again, using the above method to find and click the tutorial image
-        """
-
-        tofind = cv2.imread("../SourcePictures/tutor.png", cv2.IMREAD_UNCHANGED)
-        loc, thershold = matching_with_screencap(tofind)
+        # find and click the tutorial image
+        loc, _ = self.cv_matcher.find_location(
+            self.cv_matcher.tutor_png)
         pyautogui.moveTo(loc[0], loc[1], duration=0.2)
         pyautogui.click(button="left", duration=0.2)
 
@@ -275,11 +249,9 @@ class ThetanArenaEnv(BaseEnv):
         
         Powered by OpenCV template matching of tutorial session start screen
         """
-        # opencv read the image by file path for templatematching
-        tofind = cv2.imread(
-            "../SourcePictures/entertutor2.png", cv2.IMREAD_UNCHANGED)
-        loc, thershold = cv_matching.matching_with_screencap(tofind)
-        if thershold > 0.7:
+        _, thres = self.cv_matcher.find_location(
+            self.cv_matcher.entertutor2_png)
+        if thres > 0.7:
             self.info['waiting'] = False
 
     def _check_if_game_session_ended(self):
@@ -289,12 +261,8 @@ class ThetanArenaEnv(BaseEnv):
         Powered by OpenCV template matching
         """
         if not self.info['waiting']:
-            # opencv read the image by file path for template matching
-            tofind = cv2.imread(
-                "../SourcePictures/finishtutor.png",
-                cv2.IMREAD_UNCHANGED)
-
-            loc, thershold = matching_with_screencap(tofind)
+            _, thershold = self.cv_matcher.find_location(
+                self.cv_matcher.finishtutor_png)
             if thershold > 0.7:
                 self.done = True
 
